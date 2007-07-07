@@ -1,0 +1,6 @@
+- It doesnt download the torrents right (binary file). WGET does it right.
+- At the initial fetching, the data should be stored somewhere, so we dont have to call fetch_url again in read()
+- Implement arguments, so we can pass the URL by argument.
+- There should be a flag to enable debug messages through syslog.
+- There should be error handling (i.e, wrong url, cant access)
+- The rss parser should implement support for pubDate, so we can set the date for the files
