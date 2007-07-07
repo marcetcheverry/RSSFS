@@ -1,0 +1,20 @@
+rssfs - A RSS FUSE Filesystem
+Version 0.1
+
+http://wiki.jardinpresente.com.ar/wiki/RSSFS
+
+CONTENTS:
+---------
+1. REQUIRED LIBRARIES
+2. INSTALLATION
+
+1. REQUIRED LIBRARIES:
+Rssfs requires a kernel with FUSE support and the following libraries:
+
+- libxml2
+- libfuse-dev
+
+2. INSTALLATION:
+To compile rssfs do:
+    make rssfs
+
