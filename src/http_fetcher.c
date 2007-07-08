@@ -817,14 +817,13 @@ int _checkBufSize(char **buf, int *bufsize, int more)
 	return 0;
 	}
 
-char * fetch_url(char *url) {
-    int ret;
-    char *fileBuf;
-
-    ret = http_fetch(url, &fileBuf);
-    if (ret == -1) {
-        http_perror("http_fetch");		/*	-1 on error. */
+// Fetch a URL, returns the file size in int, or -1 if there is an error. Pass a char pointer reference to get the data.
+int fetch_url(char *url, char **fileBuf) {
+    int file_size = http_fetch(url, fileBuf);
+    if (file_size == -1) {
+        http_perror("http_fetch");
+        return -1;
     } else {
-        return fileBuf;
+        return file_size;
     }
 }

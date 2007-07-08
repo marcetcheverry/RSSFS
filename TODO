@@ -1,4 +1,5 @@
 - It doesnt download the torrents right (binary file). WGET does it right.
-- At the initial fetching, the data should be stored somewhere, so we dont have to call fetch_url again in read()
-- The rss parser should implement support for pubDate, so we can set the date for the files
-- File name should be striped of invalid characters
+- At the initial fetching, the data should be stored somewhere, so we dont have to call fetch_url again in read(). Or in the initial fetch, just get the file sizes.
+- The rss parser should implement support for pubDate, so we can set the date for the files.
+- File name should be striped of invalid characters with str_replace() (Implemented, but we need to find out which characters are valid)
+- Better syslog messages.

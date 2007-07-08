@@ -27,7 +27,7 @@
 // The linked list struct for our data
 RssData * datalist;
 
-static long long int file_size;
+static int file_size;
 
 // Replaces characters in a string
 char * str_replace(const char *str, const char *character, const char *replace) {
@@ -150,15 +150,13 @@ static int rssfs_read(const char *path, char *buf, size_t size, off_t offset, st
         return -ENOENT;
     }
 
-    // Get the torrent
-
-    file_content = fetch_url(getRecordUrlByTitle(datalist, path+1));
-    file_size = sizeof(file_content)/sizeof(char) -1;
-
-    #ifdef DEBUG
-    syslog(LOG_INFO, file_content);
-    #endif
-
+    // Get the data
+    file_size = fetch_url(getRecordUrlByTitle(datalist, path+1), &file_content);
+    
+    if (file_size == -1) {
+        fprintf(stderr, "Could not fetch '%s' from server", path+1);
+        return -ENOENT;
+    }
 
     if (offset >= file_size) { /* Trying to read past the end of file. */
         return 0;
@@ -198,6 +196,10 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    #ifdef DEBUG
+    syslog(LOG_DEBUG, "Init");
+    #endif
+
     printf("Loading RSS feed...\n");
 
     // Fetch our RSS data
@@ -208,10 +210,6 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
         
-    #ifdef DEBUG
-    syslog(LOG_DEBUG, "Init rssfs");
-    #endif
-
     // Don't send the URL data to fuse.
     fusev[0] = argv[0];
     fusev[1] = argv[2];

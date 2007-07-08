@@ -156,7 +156,7 @@ int makeSocket(const char *host);
 	 */
 int _checkBufSize(char **buf, int *bufsize, int more);
 
-char * fetch_url(char *url);
+int fetch_url(char *url, char **fileBuf);
 
 #endif
 

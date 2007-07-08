@@ -102,7 +102,7 @@ static RssData * iterate_xml(xmlNode *root_node) {
     RssData * datalist = NULL;
     int counter = 0;
     char * file_content;
-    long int size;
+    int size;
 
     // Top level (<rss>)
     for (; root_node; root_node = root_node->next) {
@@ -138,8 +138,10 @@ static RssData * iterate_xml(xmlNode *root_node) {
                     if (strcmp((const char *)item_node_children->name, "link") == 0) {
                         link = item_node_children->children->content;
                         // Download and calculate file size
-                        file_content = fetch_url((char *)link);
-                        size = sizeof(file_content);
+                        size = fetch_url((char *)link, &file_content);
+                        if (size == -1) {
+                            size = 0;
+                        }
                     } else if (strcmp((const char *)item_node_children->name, "title") == 0) {
                         title = item_node_children->children->content;
                     }
