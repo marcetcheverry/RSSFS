@@ -1,3 +1,13 @@
+/*
+ * rssfs
+ *
+ * Copyright 2007 Marc E.
+ * http://www.jardinpresente.com.ar/wiki/index.php/Main_Page
+ *
+ * RSS parser functions and storage headers
+ * $Id$
+ */
+
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 

@@ -1,12 +1,15 @@
 /*
  * rssfs
- * Copyright Marc E. 2007
+ *
+ * Copyright 2007 Marc E.
+ * http://www.jardinpresente.com.ar/wiki/index.php/Main_Page
+ *
+ * FUSE module
  * $Id$
  */
 
 #define FUSE_USE_VERSION  26 
 #include <fuse.h>
-#include <syslog.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -16,6 +19,8 @@
 #include <string.h>
 #include <asm/errno.h>
 #include <fcntl.h>
+
+#include "rssfs.h"
 #include "http_fetcher.h"
 #include "rss_parser.h"
 
@@ -23,7 +28,6 @@
 RssData * datalist;
 
 static long long int file_size;
-
 
 static int rssfs_getattr(const char *path, struct stat *stbuf) {
     int res = 0;
@@ -37,8 +41,6 @@ static int rssfs_getattr(const char *path, struct stat *stbuf) {
         stbuf->st_mode = S_IFREG | 0555;
         stbuf->st_nlink = 1;
         stbuf->st_size = getRecordFileSizeByTitle(datalist, path+1);
-        file_size;
-
     }
     else
         res = -ENOENT;
@@ -73,11 +75,15 @@ static int rssfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
 static int rssfs_open(const char *path, struct fuse_file_info *fi) {
     int res;
 
+    #ifdef DEBUG
     syslog(LOG_INFO, "Opening file path: %s", path+1);
+    #endif
 
     // Check if its in our data list
     if (findRecordByTitle(datalist, path+1) == -1) {
+        #ifdef DEBUG
         syslog(LOG_ERR, "No entity!");
+        #endif
         return -ENOENT;
     }
 
@@ -91,7 +97,9 @@ static int rssfs_read(const char *path, char *buf, size_t size, off_t offset, st
     char *file_content;
     (void) fi;
 
+    #ifdef DEBUG
     syslog(LOG_INFO, "Reading file path: %s", path+1);
+    #endif
 
     // Check the path
     if (findRecordByTitle(datalist, path+1) == -1) {
@@ -103,7 +111,9 @@ static int rssfs_read(const char *path, char *buf, size_t size, off_t offset, st
     file_content = fetch_url(getRecordUrlByTitle(datalist, path+1));
     file_size = sizeof(file_content)/sizeof(char) -1;
 
+    #ifdef DEBUG
     syslog(LOG_INFO, file_content);
+    #endif
 
 
     if (offset >= file_size) { /* Trying to read past the end of file. */
@@ -129,18 +139,37 @@ static struct fuse_operations rssfs_oper = {
     .read       = rssfs_read,
 };
 
-int main(int argc, char *argv[]) {
+/* Print usage information on stderr */
+void usage(char * argve) {
+    fprintf(stderr, "Usage: %s url mount-point\n", argve);
+    fprintf(stderr, "Version: %s\n", VERSION);
+}
 
-    if (argc != 2)
-        return(1);
-    //char * surl = "http://www.btarg.com.ar/tracker/rss.php?feed=dl&cat=6,1,2,7,11,12,9,10,15,13,14,3,4,8,5&passkey=f53897bb25ff0d053d5cd9535ef9e21a";
-    char * surl = "http://www.supertorrents.org/rss.php?passkey=38f15d1430602e32593bc3fc3292620d&dd=1";
+/* Main function */
+int main(int argc, char *argv[]) {
+    char *fusev[2];
+
+    if (argc != 3) {
+        usage(argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
     printf("Loading RSS feed...\n");
+
     // Fetch our RSS data
-    datalist = loadRSS(surl);
+    datalist = loadRSS(argv[1]);
 
-    syslog(LOG_INFO, "Init");
+    if (datalist == NULL) {
+        fprintf(stderr, "Could not open or parse: %s\n", argv[1]);
+        exit(EXIT_FAILURE);
+    }
+        
+    #ifdef DEBUG
+    syslog(LOG_DEBUG, "Init rssfs");
+    #endif
 
-    return fuse_main(argc, argv, &rssfs_oper);
+    // Don't send the URL data to fuse.
+    fusev[0] = argv[0];
+    fusev[1] = argv[2];
+    return fuse_main(argc-1, fusev, &rssfs_oper);
 }

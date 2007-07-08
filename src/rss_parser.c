@@ -1,15 +1,27 @@
+/*
+ * rssfs
+ *
+ * Copyright 2007 Marc E.
+ * http://www.jardinpresente.com.ar/wiki/index.php/Main_Page
+ *
+ * RSS parser functions and storage handlers
+ * $Id$
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "rssfs.h"
 #include "rss_parser.h"
 #include "http_fetcher.h"
-
-// Extension to use in the file names (this appends to the rss <title> tag, remove it if you dont want one.
-#define RSSEXT ".torrent"
 
 // Adds a record to a RssData struct
 RssData * addRecord(RssData *datalist, int counter, const xmlChar *title, const xmlChar *link, long int size) {
     //printf("Add %d: %s - %s!\n", counter, (char *)title, (char *)link);
     RssData * new = malloc(sizeof(RssData));
+    if (new == NULL) {
+        fprintf(stderr, "Could not allocate memory\n");
+    }
     new->number = counter;
     #ifdef RSSEXT
     sprintf(new->title, "%s%s", (char *)title, RSSEXT);
@@ -151,7 +163,7 @@ RssData * loadRSS(char *url) {
     doc = xmlReadFile(url, NULL, 0);
 
     if (doc == NULL) {
-        printf("Error: could not parse file %s\n", url);
+        return NULL;
     }
     root_element = xmlDocGetRootElement(doc);
 
