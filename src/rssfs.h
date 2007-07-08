@@ -19,3 +19,5 @@
 #ifdef DEBUG
 #include <syslog.h>
 #endif
+
+char * str_replace(const char *str, const char *character, const char *replace);

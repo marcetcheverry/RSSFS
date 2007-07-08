@@ -2,7 +2,7 @@
  * rssfs
  *
  * Copyright 2007 Marc E.
- * http://www.jardinpresente.com.ar/wiki/index.php/Main_Page
+ * http://www.jardinpresente.com.ar/wiki/index.php/RSSFS
  *
  * FUSE module
  * $Id$
@@ -28,6 +28,50 @@
 RssData * datalist;
 
 static long long int file_size;
+
+// Replaces characters in a string
+char * str_replace(const char *str, const char *character, const char *replace) {
+    char* var;
+    char* tmp_pos;
+    char* needle_pos;
+
+    int count;
+    int len;
+    if( strlen (character) < strlen (replace) ){
+
+        count = 0;
+        tmp_pos = (char*)str;
+        while( needle_pos = (char*) strcasestr( tmp_pos, character ) ){
+
+            tmp_pos = needle_pos + strlen (character);
+            count++;
+
+        }
+        len = strlen(str) + (strlen(replace) - strlen(character)) * count;
+        var = (char*) malloc( sizeof(char) * (len + 1) );
+
+    }	
+    else {
+
+        len = strlen(str);
+        var = (char*) malloc( sizeof(char) * (len+1) );
+        memset( var, 0, ( sizeof(char) * (len+1) ) );
+
+    }
+    tmp_pos = (char*) str;
+    while( needle_pos = (char*)strcasestr( tmp_pos, character ) ){
+
+        len = needle_pos - tmp_pos;
+
+        strncat( var, tmp_pos, len );
+        strcat( var, replace);
+
+        tmp_pos = needle_pos + strlen (character);
+
+    }
+    strcat( var, tmp_pos );
+    return var;
+}
 
 static int rssfs_getattr(const char *path, struct stat *stbuf) {
     int res = 0;
@@ -64,7 +108,7 @@ static int rssfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
         if (current != NULL) {
             while (current != NULL) {
                 // TODO: Filter out invalid characters
-                filler(buf, current->title, NULL, 0);
+                filler(buf, str_replace(current->title, "/", "-"), NULL, 0);
                 current = current->next;
             }
         }

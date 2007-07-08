@@ -2,7 +2,7 @@
  * rssfs
  *
  * Copyright 2007 Marc E.
- * http://www.jardinpresente.com.ar/wiki/index.php/Main_Page
+ * http://www.jardinpresente.com.ar/wiki/index.php/RSSFS
  *
  * RSS parser functions and storage headers
  * $Id$
