@@ -3,12 +3,19 @@
 #include "rss_parser.h"
 #include "http_fetcher.h"
 
+// Extension to use in the file names (this appends to the rss <title> tag, remove it if you dont want one.
+#define RSSEXT ".torrent"
+
 // Adds a record to a RssData struct
 RssData * addRecord(RssData *datalist, int counter, const xmlChar *title, const xmlChar *link, long int size) {
     //printf("Add %d: %s - %s!\n", counter, (char *)title, (char *)link);
     RssData * new = malloc(sizeof(RssData));
     new->number = counter;
+    #ifdef RSSEXT
+    sprintf(new->title, "%s%s", (char *)title, RSSEXT);
+    #else
     sprintf(new->title, "%s", (char *)title);
+    #endif
     sprintf(new->link, "%s", (char *)link);
     new->size = size;
     new->next = datalist;

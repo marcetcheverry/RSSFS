@@ -61,6 +61,7 @@ static int rssfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
         RssData *current = datalist;
         if (current != NULL) {
             while (current != NULL) {
+                // TODO: Filter out invalid characters
                 filler(buf, current->title, NULL, 0);
                 current = current->next;
             }
