@@ -29,7 +29,7 @@
 RssData * datalist;
 
 // WARNING SHOULD BE LONG LONG
-static int file_size;
+static long int file_size;
 static char *url;
 
 static int rssfs_getattr(const char *path, struct stat *stbuf) {
@@ -83,7 +83,7 @@ static int rssfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
 static int rssfs_open(const char *path, struct fuse_file_info *fi) {
 
 #ifdef DEBUG
-    syslog(LOG_INFO, "Opening file path: %s", path+1);
+    syslog(LOG_INFO, "Opening file path: %s, url: %s", path+1, getRecordUrlByTitle(datalist, path+1));
 #endif
 
     // Check if its in our data list

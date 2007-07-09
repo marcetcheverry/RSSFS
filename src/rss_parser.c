@@ -173,6 +173,7 @@ static RssData * iterate_xml(xmlNode *root_node) {
                         link = item_node_children->children->content;
                         // Download and calculate file size
                         size = fetch_url((char *)link, &file_content);
+
                         if (size == -1) {
                             size = 0;
                         }
