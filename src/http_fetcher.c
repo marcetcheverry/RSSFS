@@ -74,12 +74,6 @@ long int fetch_url(char *url, char **fileBuf) {
 
 
     *fileBuf = (char *)chunk.memory;
-/*--------------------------------------------------
-*     int i;
-*     for (i = 0; i < chunk.size; i++) {
-*         printf("%c", chunk.memory[i]);
-*     }
-*--------------------------------------------------*/
 
     if(chunk.memory) {
         free(chunk.memory);
