@@ -6,6 +6,7 @@
  *
  * FUSE module
  * $Id$
+ *
  */
 
 #define FUSE_USE_VERSION  26 
@@ -27,51 +28,9 @@
 // The linked list struct for our data
 RssData * datalist;
 
+// WARNING SHOULD BE LONG LONG
 static int file_size;
-
-// Replaces characters in a string
-char * str_replace(const char *str, const char *character, const char *replace) {
-    char* var;
-    char* tmp_pos;
-    char* needle_pos;
-
-    int count;
-    int len;
-    if( strlen (character) < strlen (replace) ){
-
-        count = 0;
-        tmp_pos = (char*)str;
-        while( needle_pos = (char*) strcasestr( tmp_pos, character ) ){
-
-            tmp_pos = needle_pos + strlen (character);
-            count++;
-
-        }
-        len = strlen(str) + (strlen(replace) - strlen(character)) * count;
-        var = (char*) malloc( sizeof(char) * (len + 1) );
-
-    }	
-    else {
-
-        len = strlen(str);
-        var = (char*) malloc( sizeof(char) * (len+1) );
-        memset( var, 0, ( sizeof(char) * (len+1) ) );
-
-    }
-    tmp_pos = (char*) str;
-    while( needle_pos = (char*)strcasestr( tmp_pos, character ) ){
-
-        len = needle_pos - tmp_pos;
-
-        strncat( var, tmp_pos, len );
-        strcat( var, replace);
-
-        tmp_pos = needle_pos + strlen (character);
-
-    }
-    strcat( var, tmp_pos );
-    return var;
-}
+static char *url;
 
 static int rssfs_getattr(const char *path, struct stat *stbuf) {
     int res = 0;
@@ -84,7 +43,12 @@ static int rssfs_getattr(const char *path, struct stat *stbuf) {
     else if(findRecordByTitle(datalist, path+1) == 0) {
         stbuf->st_mode = S_IFREG | 0555;
         stbuf->st_nlink = 1;
-        stbuf->st_size = getRecordFileSizeByTitle(datalist, path+1);
+        if ((stbuf->st_size = getRecordFileSizeByTitle(datalist, path+1)) == -1) {
+#ifdef DEBUG
+            syslog(LOG_INFO, "Could not find file size!");
+#endif
+            stbuf->st_size = 0;
+        }
     }
     else
         res = -ENOENT;
@@ -102,13 +66,13 @@ static int rssfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
     } else {
         filler(buf, ".", NULL, 0);
         filler(buf, "..", NULL, 0);
-        
+
         // Fill from the data
         RssData *current = datalist;
         if (current != NULL) {
             while (current != NULL) {
                 // TODO: Filter out invalid characters
-                filler(buf, str_replace(current->title, "/", "-"), NULL, 0);
+                filler(buf, current->title, NULL, 0);
                 current = current->next;
             }
         }
@@ -117,17 +81,16 @@ static int rssfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
 }
 
 static int rssfs_open(const char *path, struct fuse_file_info *fi) {
-    int res;
 
-    #ifdef DEBUG
+#ifdef DEBUG
     syslog(LOG_INFO, "Opening file path: %s", path+1);
-    #endif
+#endif
 
     // Check if its in our data list
     if (findRecordByTitle(datalist, path+1) == -1) {
-        #ifdef DEBUG
+#ifdef DEBUG
         syslog(LOG_ERR, "No entity!");
-        #endif
+#endif
         return -ENOENT;
     }
 
@@ -141,9 +104,9 @@ static int rssfs_read(const char *path, char *buf, size_t size, off_t offset, st
     char *file_content;
     (void) fi;
 
-    #ifdef DEBUG
+#ifdef DEBUG
     syslog(LOG_INFO, "Reading file path: %s", path+1);
-    #endif
+#endif
 
     // Check the path
     if (findRecordByTitle(datalist, path+1) == -1) {
@@ -152,13 +115,16 @@ static int rssfs_read(const char *path, char *buf, size_t size, off_t offset, st
 
     // Get the data
     file_size = fetch_url(getRecordUrlByTitle(datalist, path+1), &file_content);
-    
+
     if (file_size == -1) {
         fprintf(stderr, "Could not fetch '%s' from server", path+1);
         return -ENOENT;
     }
 
     if (offset >= file_size) { /* Trying to read past the end of file. */
+#ifdef DEBUG
+        syslog(LOG_INFO, "Trying to read past the end of file.");
+#endif
         return 0;
     }
 
@@ -171,7 +137,29 @@ static int rssfs_read(const char *path, char *buf, size_t size, off_t offset, st
     return size;
 }
 
-static int rssfs_write(const char *path) {
+static void * rssfs_init(void) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "Mounted");
+    syslog(LOG_INFO, "Loading RSS feed '%s", url);
+#endif
+    // Fetch our RSS data
+    datalist = loadRSS(url);
+
+    if (datalist == NULL) {
+        fprintf(stderr, "Could not open or parse: '%s'\n", url);
+        exit(EXIT_FAILURE);
+    } else {
+#ifdef DEBUG
+    syslog(LOG_INFO, "RSS feed '%s' loaded", url);
+#endif 
+    }
+    return NULL;
+}
+
+static void rssfs_destroy(void *arg) {
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "Unmounted");
+#endif
 }
 
 static struct fuse_operations rssfs_oper = {
@@ -179,6 +167,8 @@ static struct fuse_operations rssfs_oper = {
     .readdir    = rssfs_readdir,
     .open       = rssfs_open,
     .read       = rssfs_read,
+    .init       = rssfs_init,
+    .destroy    = rssfs_destroy,
 };
 
 /* Print usage information on stderr */
@@ -195,21 +185,9 @@ int main(int argc, char *argv[]) {
         usage(argv[0]);
         exit(EXIT_FAILURE);
     }
+    
+    url = argv[1];
 
-    #ifdef DEBUG
-    syslog(LOG_DEBUG, "Init");
-    #endif
-
-    printf("Loading RSS feed...\n");
-
-    // Fetch our RSS data
-    datalist = loadRSS(argv[1]);
-
-    if (datalist == NULL) {
-        fprintf(stderr, "Could not open or parse: %s\n", argv[1]);
-        exit(EXIT_FAILURE);
-    }
-        
     // Don't send the URL data to fuse.
     fusev[0] = argv[0];
     fusev[1] = argv[2];

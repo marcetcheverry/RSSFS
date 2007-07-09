@@ -6,29 +6,58 @@
  *
  * RSS parser functions and storage handlers
  * $Id$
+ *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "rssfs.h"
 #include "rss_parser.h"
 #include "http_fetcher.h"
 
+// Invalid characters in filenames
+char invalid_char[10] = {'/', '\\', '?', '%', '*', ':', '|', '"', '<', '>'};
+
+
+// Checks filename, and replaces invalid chars the invalid_char character array.
+char *checkFilename(char *filename) {
+    if (strcspn(filename, invalid_char) != strlen(filename)) {
+        int i;
+        char * stringptr;
+        // Needed
+        char * filenamecopy = strdup(filename);
+
+        for (i = 0; i < sizeof(invalid_char); i++) {
+            if ((stringptr = strchr(filenamecopy, invalid_char[i])) != NULL) {
+                *stringptr = '.';
+            } 
+        }
+        return filenamecopy;
+    } else {
+        return filename;
+    }
+}
+
 // Adds a record to a RssData struct
 RssData * addRecord(RssData *datalist, int counter, const xmlChar *title, const xmlChar *link, long int size) {
     //printf("Add %d: %s - %s!\n", counter, (char *)title, (char *)link);
+
+    // Clean out invalid chars
+    char *titleclean = checkFilename((char *)title);
+
     RssData * new = malloc(sizeof(RssData));
     if (new == NULL) {
         fprintf(stderr, "Could not allocate memory\n");
     }
     new->number = counter;
-    #ifdef RSSEXT
-    sprintf(new->title, "%s%s", (char *)title, RSSEXT);
-    #else
-    sprintf(new->title, "%s", (char *)title);
-    #endif
-    sprintf(new->link, "%s", (char *)link);
+#ifdef RSSEXT
+    sprintf(new->title, "%s%s", titleclean, RSSEXT);
+#else
+    sprintf(new->title, "%s", titleclean);
+#endif
+    sprintf(new->link, "%s", link);
     new->size = size;
     new->next = datalist;
     datalist = new;
@@ -38,7 +67,7 @@ RssData * addRecord(RssData *datalist, int counter, const xmlChar *title, const 
 void printRecord(RssData *datalist) {
     printf("Number: %d\n", datalist->number);
     printf("Title: %s\n", datalist->title);
-    printf("link: %s\n", datalist->link);
+    printf("Link: %s\n", datalist->link);
 }
 
 void printAllRecords(RssData *datalist) {
@@ -67,6 +96,7 @@ int findRecordByTitle(RssData *datalist, const char *title) {
     return -1;
 }
 
+// Returns the url by title, or (char *)-1 if it cant be found.
 char * getRecordUrlByTitle(RssData *datalist, const char *title) {
     int found = 0;
     RssData *current = datalist;
@@ -78,8 +108,11 @@ char * getRecordUrlByTitle(RssData *datalist, const char *title) {
             current = current->next;
         }
     }
+    // FIXME
+    return (char *)-1;
 }
 
+// Returns the file size as a long int, or -1 if it can't be found
 long int getRecordFileSizeByTitle(RssData *datalist, const char *title) {
     int found = 0;
     RssData *current = datalist;
@@ -91,6 +124,7 @@ long int getRecordFileSizeByTitle(RssData *datalist, const char *title) {
             current = current->next;
         }
     }
+    return -1;
 }
 
 static RssData * iterate_xml(xmlNode *root_node) {
@@ -102,14 +136,14 @@ static RssData * iterate_xml(xmlNode *root_node) {
     RssData * datalist = NULL;
     int counter = 0;
     char * file_content;
-    int size;
+    long int size;
 
     // Top level (<rss>)
     for (; root_node; root_node = root_node->next) {
         if(root_node->type != XML_ELEMENT_NODE) {
             continue;
         }
-        
+
         // Sub level (<channel>)
         for (root_node_children = root_node->children; root_node_children; root_node_children = root_node_children->next) {
             if (root_node_children->type != XML_ELEMENT_NODE) {
@@ -146,9 +180,9 @@ static RssData * iterate_xml(xmlNode *root_node) {
                         title = item_node_children->children->content;
                     }
                 }
-            // Add the item's data to a linked list
-            datalist = addRecord(datalist, counter, title, link, size);
-            //printf("%d %s %s\n", counter, link, title);
+                // Add the item's data to a linked list
+                datalist = addRecord(datalist, counter, title, link, size);
+                //printf("%d %s %s\n", counter, link, title);
             }
         }
     }
@@ -162,14 +196,13 @@ RssData * loadRSS(char *url) {
 
     LIBXML_TEST_VERSION
 
-    doc = xmlReadFile(url, NULL, 0);
+        doc = xmlReadFile(url, NULL, 0);
 
     if (doc == NULL) {
         return NULL;
     }
     root_element = xmlDocGetRootElement(doc);
 
-    xmlNodePtr node;
 
     RssData * datalist = iterate_xml(root_element);
 
@@ -180,6 +213,6 @@ RssData * loadRSS(char *url) {
 }
 
 #else
-    fprintf(stderr, "Tree support not compiled in\n");
-    exit(1);
+fprintf(stderr, "Tree support not compiled in\n");
+exit(1);
 #endif

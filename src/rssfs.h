@@ -14,10 +14,9 @@
 #define RSSEXT ".torrent"
 
 // Whether to print LOG_DEBUG messages to syslog
-#define DEBUG 1
+#define DEBUG
 
 #ifdef DEBUG
 #include <syslog.h>
 #endif
 
-char * str_replace(const char *str, const char *character, const char *replace);

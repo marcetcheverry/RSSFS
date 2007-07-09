@@ -6,6 +6,7 @@
  *
  * RSS parser functions and storage headers
  * $Id$
+ * 
  */
 
 #include <libxml/parser.h>
@@ -19,6 +20,8 @@ typedef struct RssData {
     long int size;
     struct RssData *next;
 } RssData;
+
+extern char invalid_char[10];
 
 RssData * addRecord(RssData *datalist, int counter, const xmlChar *title, const xmlChar *link, long int size);
 void printRecord(RssData *datalist);
