@@ -13,6 +13,7 @@ Rssfs requires a kernel with FUSE support and the following libraries:
 
 - libxml2
 - libfuse-dev
+- libcurl
 
 2. INSTALLATION:
 To compile rssfs do:
