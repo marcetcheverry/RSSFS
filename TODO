@@ -1,5 +1,7 @@
-- It doesnt download the torrents right (binary file). WGET does it right.
-- At the initial fetching, the data should be stored somewhere, so we dont have to call fetch_url again in read(). Or in the initial fetch, just get the file sizes.
-- The rss parser should implement support for pubDate, so we can set the date for the files.
-- File name should be striped of invalid characters with str_replace() (Implemented, but we need to find out which characters are valid)
-- Better syslog messages.
+By priority:
+
+- A minor corruption occurs when downloading torrents, see if we can better understand the code
+- See if we can get the file sizes through the Content-Lenght header
+- Store the <lastBuildDate>, <pubDate> of an <item>, and <itemSize> if present
+- Implement multi threaded loop to fetch the feed considering <lastBuildDate>
+- Better syslog logging messages
