@@ -1,14 +1,8 @@
 rssfs - A RSS FUSE Filesystem
 Version 0.1
 
-http://wiki.jardinpresente.com.ar/wiki/RSSFS
-
-CONTENTS:
----------
-1. REQUIRED LIBRARIES
-2. INSTALLATION
-
 1. REQUIRED LIBRARIES:
+
 Rssfs requires a kernel with FUSE support and the following libraries:
 
 - libxml2
@@ -16,6 +10,42 @@ Rssfs requires a kernel with FUSE support and the following libraries:
 - libcurl
 
 2. INSTALLATION:
+
 To compile rssfs do:
     make rssfs
 
+3. RSS SPECIFICATION
+
+For RSSFS to parse your RSS feed, a specific standard must be followed to make things easier. The following is an example:
+
+     <?xml version="1.0"?>
+     <rss version="2.0">
+         <channel>
+             <title>RSSFS Test</title>
+             <link>http://www.url.com/</link>
+             <description>A test for RSS in Userspace.</description>
+             <language>en-us</language>
+             <pubDate>Tue, 10 Jun 2003 04:00:00 GMT</pubDate>
+            <!-- Please make sure to include this, as RSSFS checks every few minutes
+             for the feed, this will help save bandwith. -->
+             <lastBuildDate>Tue, 10 Jun 2003 09:41:01 GMT</lastBuildDate>
+             <item>
+                <!-- Please try to avoid invalid characters, either way, RSSFS will try to clean it up.
+                     Also, please try to match the name of the file. -->
+                 <title>file.txt</title>
+                <!-- This '''MUST''' be a direct link to a file object.
+                     If a file extension is not provided, none will be appended 
+                     to <title> as the filename -->
+                 <link>http://www.url.com/files/file.txt</link>
+                <!-- This will become the file's time stamp -->
+                 <pubDate>Tue, 03 Jun 2003 09:39:21 GMT</pubDate>
+                <!-- Size in bytes of the file object. This tag is completely optional
+                    and deviates from the RSS standard. It only helps improve performance by 
+                    avoiding extra queries to your server.However, you absolutely must 
+                    make sure that the size is correct. -->
+                 <linkSize>8010</linkSize>
+             </item>
+         </channel>
+     </rss>
+    
+It does not matter what RSS standard you use as long as you follow the standard within the tag. It is up to LibXML to decide if your RSS feed is malformed.
